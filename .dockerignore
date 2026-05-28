@@ -1,16 +1,14 @@
 .git
 .next
 node_modules
-presentations
 coverage
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .env
 .env.*
-*.pptx
-*.py
 *.spec
 Ascension_*
 build_ascension_*
 ytdownloader.*
+scripts/

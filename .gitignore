@@ -36,21 +36,14 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# Presentations data (keep .gitkeep, ignore actual presentation files)
-/presentations/*/
-
-# AI settings data (keep .gitkeep, ignore settings.json)
-/data/settings.json
-
 # Claude Code internal files
 .claude.json
 .claude.json.backup
 
-# Personal/unrelated files in project root (not part of this repo)
+# Personal files
 .gitconfig
 .node_repl_history
 *.pptx
-*.py
 *.spec
 ytdownloader.*
 Ascension_*
