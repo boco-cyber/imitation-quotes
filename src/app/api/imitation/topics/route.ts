@@ -2,10 +2,10 @@ export const runtime = 'nodejs'
 
 import { NextRequest } from 'next/server'
 import { corsOptions, withCors } from '@/lib/apiResponse'
-import { getTopics } from '@/lib/imitationDb'
 
+// Topics are not part of the new devotional format.
 export async function GET(request: NextRequest) {
-  return withCors(request, { items: getTopics() })
+  return withCors(request, { items: [] })
 }
 
 export async function OPTIONS(request: NextRequest) {

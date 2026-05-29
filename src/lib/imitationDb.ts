@@ -1,47 +1,17 @@
 import fs from 'fs'
 import path from 'path'
 
-export interface ImitationBook {
+export interface Devotional {
   id: number
-  title: string
-}
-
-export interface ImitationArticle {
-  id: number
-  book_number: number
-  book_title: string
-  article_number: number
-  article_title: string
-  body: null
-}
-
-export interface ImitationQuote {
-  id: number
-  day_of_year: number
+  day: number
   calendar_date: string
-  book_number: number
-  book_title: string
-  article_id: number
-  article_number: number
-  article_title: string
-  sentence_index: number
-  topic: string
   title: string
-  quote: string
-}
-
-interface ImitationDataset {
   source: string
-  calendar: string
-  books: ImitationBook[]
-  articles: ImitationArticle[]
-  quotes: ImitationQuote[]
+  body: string
+  prayer: string
 }
 
-export interface QuoteFilters {
-  book?: number
-  article?: number
-  topic?: string
+export interface DevotionalFilters {
   day?: number
   date?: string
   q?: string
@@ -49,93 +19,115 @@ export interface QuoteFilters {
   offset?: number
 }
 
-export interface PaginatedQuotes {
-  items: ImitationQuote[]
+export interface PaginatedDevotionals {
+  items: Devotional[]
   total: number
   limit: number
   offset: number
 }
 
-let cachedDataset: ImitationDataset | null = null
+interface Dataset {
+  source: string
+  calendar: string
+  devotionals: Devotional[]
+}
 
-function datasetPath(): string {
+// ---------- Book helpers (derived from source field) ----------
+
+const BOOK_TITLES: Record<number, string> = {
+  1: 'Thoughts Helpful in the Life of the Soul',
+  2: 'The Interior Life',
+  3: 'Internal Consolation',
+  4: 'An Invitation to Holy Communion',
+}
+
+const BOOK_PREFIXES: [string, number][] = [
+  ['Book One', 1],
+  ['Book Two', 2],
+  ['Book Three', 3],
+  ['Book Four', 4],
+]
+
+export function getBookNumber(source: string): number {
+  for (const [prefix, num] of BOOK_PREFIXES) {
+    if (source.startsWith(prefix)) return num
+  }
+  return 0
+}
+
+export function getBooks(): { id: number; title: string }[] {
+  return Object.entries(BOOK_TITLES).map(([id, title]) => ({ id: Number(id), title }))
+}
+
+// ---------- JSON cache ----------
+
+let cached: Dataset | null = null
+
+function jsonPath(): string {
   return process.env.IMITATION_QUOTES_JSON
     ? path.resolve(process.env.IMITATION_QUOTES_JSON)
     : path.join(process.cwd(), 'data', 'imitation_daily_quotes.json')
 }
 
-export function getImitationDataset(): ImitationDataset {
-  if (cachedDataset) return cachedDataset
-
-  const raw = fs.readFileSync(datasetPath(), 'utf8')
-  cachedDataset = JSON.parse(raw) as ImitationDataset
-  return cachedDataset
+function getDataset(): Dataset {
+  if (!cached) cached = JSON.parse(fs.readFileSync(jsonPath(), 'utf8')) as Dataset
+  return cached
 }
 
-export function getBooks(): ImitationBook[] {
-  return getImitationDataset().books
+export function clearCache(): void {
+  cached = null
 }
 
-export function getTopics(): { id: string; name: string; quoteCount: number }[] {
-  const counts = new Map<string, number>()
-  for (const quote of getImitationDataset().quotes) {
-    counts.set(quote.topic, (counts.get(quote.topic) || 0) + 1)
+// ---------- Public read functions ----------
+
+export function getDevotionalCount(): number {
+  return getDataset().devotionals.length
+}
+
+export function getUniqueSources(bookId?: number): string[] {
+  const seen = new Set<string>()
+  for (const d of getDataset().devotionals) {
+    if (!bookId || getBookNumber(d.source) === bookId) seen.add(d.source)
+  }
+  return Array.from(seen).sort()
+}
+
+export function getDailyDevotional(inputDate = new Date()): Devotional {
+  const mm = String(inputDate.getMonth() + 1).padStart(2, '0')
+  const dd = String(inputDate.getDate()).padStart(2, '0')
+  const calDate = mm === '02' && dd === '29' ? '02-28' : `${mm}-${dd}`
+
+  return (
+    getDataset().devotionals.find(d => d.calendar_date === calDate) ??
+    getDataset().devotionals[0]
+  )
+}
+
+export function getDevotionalById(id: number): Devotional | undefined {
+  return getDataset().devotionals.find(d => d.id === id)
+}
+
+export function queryDevotionals(filters: DevotionalFilters): PaginatedDevotionals {
+  const limit = Math.max(1, Math.min(filters.limit ?? 30, 100))
+  const offset = Math.max(0, filters.offset ?? 0)
+
+  let all = getDataset().devotionals
+
+  if (filters.day !== undefined) {
+    all = all.filter(d => d.day === filters.day)
+  }
+  if (filters.date) {
+    all = all.filter(d => d.calendar_date === filters.date)
+  }
+  if (filters.q?.trim()) {
+    const q = filters.q.trim().toLowerCase()
+    all = all.filter(
+      d =>
+        d.title.toLowerCase().includes(q) ||
+        d.body.toLowerCase().includes(q) ||
+        d.source.toLowerCase().includes(q),
+    )
   }
 
-  return Array.from(counts.entries())
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([name, quoteCount]) => ({
-      id: name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''),
-      name,
-      quoteCount,
-    }))
-}
-
-export function getArticles(book?: number): ImitationArticle[] {
-  const articles = getImitationDataset().articles
-  return book ? articles.filter(article => article.book_number === book) : articles
-}
-
-export function getQuoteById(id: number): ImitationQuote | undefined {
-  return getImitationDataset().quotes.find(quote => quote.id === id)
-}
-
-export function getDailyQuote(inputDate = new Date()): ImitationQuote {
-  const month = String(inputDate.getMonth() + 1).padStart(2, '0')
-  const day = String(inputDate.getDate()).padStart(2, '0')
-  const calendarDate = `${month}-${day}`
-  const quotes = getImitationDataset().quotes
-
-  if (calendarDate === '02-29') {
-    return quotes.find(quote => quote.calendar_date === '02-28') || quotes[0]
-  }
-
-  return quotes.find(quote => quote.calendar_date === calendarDate) || quotes[0]
-}
-
-export function queryQuotes(filters: QuoteFilters): PaginatedQuotes {
-  const limit = Math.max(1, Math.min(filters.limit || 30, 100))
-  const offset = Math.max(0, filters.offset || 0)
-  const q = filters.q?.trim().toLowerCase()
-  const topic = filters.topic?.trim().toLowerCase()
-
-  const filtered = getImitationDataset().quotes.filter(quote => {
-    if (filters.book && quote.book_number !== filters.book) return false
-    if (filters.article && quote.article_id !== filters.article) return false
-    if (filters.day && quote.day_of_year !== filters.day) return false
-    if (filters.date && quote.calendar_date !== filters.date) return false
-    if (topic && quote.topic.toLowerCase() !== topic) return false
-    if (q) {
-      const searchable = `${quote.title} ${quote.quote} ${quote.topic} ${quote.article_title}`.toLowerCase()
-      if (!searchable.includes(q)) return false
-    }
-    return true
-  })
-
-  return {
-    items: filtered.slice(offset, offset + limit),
-    total: filtered.length,
-    limit,
-    offset,
-  }
+  return { items: all.slice(offset, offset + limit), total: all.length, limit, offset }
 }

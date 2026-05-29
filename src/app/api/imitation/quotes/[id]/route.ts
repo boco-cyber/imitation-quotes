@@ -2,7 +2,7 @@ export const runtime = 'nodejs'
 
 import { NextRequest } from 'next/server'
 import { corsOptions, withCors } from '@/lib/apiResponse'
-import { getQuoteById } from '@/lib/imitationDb'
+import { getDevotionalById } from '@/lib/imitationDb'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -10,19 +10,19 @@ interface RouteParams {
 
 export async function GET(request: NextRequest, { params }: RouteParams) {
   const { id } = await params
-  const quoteId = Number(id)
+  const devId = Number(id)
 
-  if (!Number.isInteger(quoteId)) {
-    return withCors(request, { error: 'Quote id must be an integer' }, { status: 400 })
+  if (!Number.isInteger(devId)) {
+    return withCors(request, { error: 'id must be an integer' }, { status: 400 })
   }
 
-  const quote = getQuoteById(quoteId)
+  const item = getDevotionalById(devId)
 
-  if (!quote) {
-    return withCors(request, { error: 'Quote not found' }, { status: 404 })
+  if (!item) {
+    return withCors(request, { error: 'Devotional not found' }, { status: 404 })
   }
 
-  return withCors(request, { item: quote })
+  return withCors(request, { item })
 }
 
 export async function OPTIONS(request: NextRequest) {

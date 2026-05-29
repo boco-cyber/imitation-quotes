@@ -2,26 +2,22 @@ export const runtime = 'nodejs'
 
 import { NextRequest } from 'next/server'
 import { corsOptions, withCors } from '@/lib/apiResponse'
-import { getImitationDataset, getTopics } from '@/lib/imitationDb'
+import { getBooks, getDevotionalCount, getUniqueSources } from '@/lib/imitationDb'
 
 export async function GET(request: NextRequest) {
-  const dataset = getImitationDataset()
-
   return withCors(request, {
-    name: 'The Imitation of Christ Daily Quotes API',
-    source: dataset.source,
-    calendar: dataset.calendar,
+    name: 'The Imitation of Christ Daily Devotionals API',
+    source: 'Thomas A Kempis, The Imitation of Christ',
+    calendar: '365-day non-leap devotional calendar',
     counts: {
-      books: dataset.books.length,
-      articles: dataset.articles.length,
-      topics: getTopics().length,
-      quotes: dataset.quotes.length,
+      books: getBooks().length,
+      chapters: getUniqueSources().length,
+      devotionals: getDevotionalCount(),
     },
     endpoints: {
       books: '/api/imitation/books',
-      articles: '/api/imitation/articles',
-      topics: '/api/imitation/topics',
-      quotes: '/api/imitation/quotes',
+      chapters: '/api/imitation/articles',
+      devotionals: '/api/imitation/quotes',
       today: '/api/imitation/quotes/today',
     },
   })
