@@ -44,3 +44,10 @@ Deployed via Docker on Coolify. Build pack: `Dockerfile`. Port: `3000`. Health c
 - `data/imitation-of-christ.raw.txt` — original source text
 - `scripts/extract_imitation_text.mjs` — extracts raw text from source
 - `scripts/build_imitation_quotes_db.py` — builds the JSON and SQLite from raw text
+
+
+## Production hosting
+
+Production runs on **AboHub (`155.248.209.35`)**, managed by the existing
+[Coolify dashboard](https://hub.copticfaith.org). See [DEPLOYMENT.md](DEPLOYMENT.md)
+for the deployment branch, application UUID, GitHub updates, data, and recovery.
