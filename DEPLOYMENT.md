@@ -27,7 +27,7 @@ Cloudflare's existing proxied A records point at `155.248.209.35`. AboHub's Orac
 
 ## Recovery
 
-Migration snapshots are retained under `/root/abohub-migration-20261023` on the original server (`163.192.16.13`). Original app containers are stopped and their volumes retained. The original proxy forwards these domains to AboHub for clients using the old origin. Before rolling WordPress back, take a fresh database/file backup from AboHub so new writes are preserved.
+Migration snapshots are retained under `/root/abohub-migration-20261023` on the original server (`163.192.16.13`). WordPress rollback containers and volumes remain on the original server. Post-migration cleanup removed the six stopped stateless API containers and unused image/build cache; rebuild those APIs from their recorded Git revision with Coolify when rolling back. The original proxy forwards these domains to AboHub for clients using the old origin. Before rolling WordPress back, take a fresh database/file backup from AboHub so new writes are preserved.
 
 The Coolify domain must use `https://imitation.copticfaith.org`. An HTTP-only
 domain creates no HTTPS router on a fresh deploy, while the server-wide HTTP
